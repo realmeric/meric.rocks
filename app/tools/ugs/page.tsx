@@ -80,16 +80,55 @@ class UGSChecker {
     return maxDutyTime;
   }
   
-  checkDutyTimeCompliance(dutyStart: string, dutyEnd: string, numSectors: number, skpkEnabled: boolean): { 
+  parseTimeWithTimezone(timeStr: string, utcOffset: number): Date | null {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(timeStr);
+    if (!match) return null;
+    
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+    
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    
+    return date;
+  }
+
+  addAircraftDutyTime(startTime: Date, aircraftDutyTime: string): Date {
+    const dutyTimeMatch = /^(\d{1,2}):(\d{2})$/.exec(aircraftDutyTime);
+    if (!dutyTimeMatch) return startTime;
+    
+    const dutyHours = parseInt(dutyTimeMatch[1], 10);
+    const dutyMinutes = parseInt(dutyTimeMatch[2], 10);
+    
+    const adjustedStartTime = new Date(startTime);
+    adjustedStartTime.setHours(adjustedStartTime.getHours() - dutyHours, adjustedStartTime.getMinutes() - dutyMinutes);
+    
+    return adjustedStartTime;
+  }
+
+  checkDutyTimeCompliance(
+    dutyStart: string, 
+    dutyEnd: string, 
+    numSectors: number, 
+    skpkEnabled: boolean,
+    utcOffset: number = 0,
+    aircraftDutyTime: string = "00:00"
+  ): { 
     isValid: boolean; 
     message: string;
     timeCategory: string;
     actualDutyHours: number;
     maxDutyHours: number;
     excess?: number;
+    adjustedStartTime?: string;
+    adjustedEndTime?: string;
   } {
-    const startTime = this.parseTime(dutyStart);
-    const endTime = this.parseTime(dutyEnd);
+    const startTime = this.parseTimeWithTimezone(dutyStart, utcOffset);
+    const endTime = this.parseTimeWithTimezone(dutyEnd, utcOffset);
     
     if (!startTime || !endTime) {
       return { 
@@ -101,13 +140,20 @@ class UGSChecker {
       };
     }
     
-    if (endTime < startTime) {
-      endTime.setDate(endTime.getDate() + 1);
+    const adjustedStartTime = this.addAircraftDutyTime(startTime, aircraftDutyTime);
+    let adjustedEndTime = new Date(endTime);
+    
+    if (adjustedEndTime < adjustedStartTime) {
+      adjustedEndTime.setDate(adjustedEndTime.getDate() + 1);
     }
     
-    const actualDutyHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-    const timeCategory = this.getTimeRangeCategory(startTime);
-    const maxDutyHours = this.getMaxDutyTime(startTime, numSectors, skpkEnabled);
+    const actualDutyHours = (adjustedEndTime.getTime() - adjustedStartTime.getTime()) / (1000 * 60 * 60);
+    
+    const timeCategory = this.getTimeRangeCategory(adjustedStartTime);
+    const maxDutyHours = this.getMaxDutyTime(adjustedStartTime, numSectors, skpkEnabled);
+    
+    const adjustedStartTimeStr = `${adjustedStartTime.getHours().toString().padStart(2, '0')}:${adjustedStartTime.getMinutes().toString().padStart(2, '0')}`;
+    const adjustedEndTimeStr = `${adjustedEndTime.getHours().toString().padStart(2, '0')}:${adjustedEndTime.getMinutes().toString().padStart(2, '0')}`;
     
     if (actualDutyHours <= maxDutyHours) {
       return {
@@ -115,7 +161,9 @@ class UGSChecker {
         message: `✅ PLANLAMADA HATA YOK.\nGörev Zamanı: ${this.decimalToHHMM(actualDutyHours)}\nMaksimum izin verilen: ${this.decimalToHHMM(maxDutyHours)}`,
         timeCategory,
         actualDutyHours,
-        maxDutyHours
+        maxDutyHours,
+        adjustedStartTime: adjustedStartTimeStr,
+        adjustedEndTime: adjustedEndTimeStr
       };
     } else {
       const excess = actualDutyHours - maxDutyHours;
@@ -125,7 +173,9 @@ class UGSChecker {
         timeCategory,
         actualDutyHours,
         maxDutyHours,
-        excess
+        excess,
+        adjustedStartTime: adjustedStartTimeStr,
+        adjustedEndTime: adjustedEndTimeStr
       };
     }
   }
@@ -142,6 +192,8 @@ export default function UGSCalculatorPage() {
   const [endTime, setEndTime] = useState('');
   const [sectors, setSectors] = useState('2');
   const [skpkEnabled, setSKPKEnabled] = useState(false);
+  const [utcOffset, setUtcOffset] = useState(3); // Default to UTC+3
+  const [aircraftDutyTime, setAircraftDutyTime] = useState('00:00');
   const [result, setResult] = useState<ReturnType<UGSChecker['checkDutyTimeCompliance']> | null>(null);
   const [error, setError] = useState('');
 
@@ -168,6 +220,11 @@ export default function UGSCalculatorPage() {
       return;
     }
     
+    if (!validateTimeFormat(aircraftDutyTime)) {
+      setError("Uçak tipine göre görev süresi formatı yanlış. Örnek: 01:00");
+      return;
+    }
+    
     if (!validateSectors(sectors)) {
       setError("Sektör sayısı geçerli değil. Pozitif bir sayı giriniz.");
       return;
@@ -178,7 +235,9 @@ export default function UGSCalculatorPage() {
       startTime, 
       endTime, 
       parseInt(sectors, 10),
-      skpkEnabled
+      skpkEnabled,
+      utcOffset,
+      aircraftDutyTime
     );
     
     setResult(calculationResult);
@@ -216,6 +275,52 @@ export default function UGSCalculatorPage() {
         </header>
         <div className="bg-secondary/30 backdrop-blur-md rounded-2xl border border-white/10 p-7 shadow-lg">
           <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium mb-2">Yerel Saat Dilimi</label>
+              <select
+                value={utcOffset}
+                onChange={(e) => setUtcOffset(parseInt(e.target.value))}
+                className="w-full p-3 bg-slate-800 text-white rounded-xl border border-white/10 focus:border-primary/30 focus:outline-none"
+              >
+                <option value={-12}>UTC-12</option>
+                <option value={-11}>UTC-11</option>
+                <option value={-10}>UTC-10</option>
+                <option value={-9}>UTC-9</option>
+                <option value={-8}>UTC-8</option>
+                <option value={-7}>UTC-7</option>
+                <option value={-6}>UTC-6</option>
+                <option value={-5}>UTC-5</option>
+                <option value={-4}>UTC-4</option>
+                <option value={-3}>UTC-3</option>
+                <option value={-2}>UTC-2</option>
+                <option value={-1}>UTC-1</option>
+                <option value={0}>UTC+0</option>
+                <option value={1}>UTC+1</option>
+                <option value={2}>UTC+2</option>
+                <option value={3}>UTC+3</option>
+                <option value={4}>UTC+4</option>
+                <option value={5}>UTC+5</option>
+                <option value={6}>UTC+6</option>
+                <option value={7}>UTC+7</option>
+                <option value={8}>UTC+8</option>
+                <option value={9}>UTC+9</option>
+                <option value={10}>UTC+10</option>
+                <option value={11}>UTC+11</option>
+                <option value={12}>UTC+12</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Uçak Tipine Göre Görev Süresi</label>
+              <input
+                type="text"
+                placeholder="01:00"
+                value={aircraftDutyTime}
+                onChange={(e) => setAircraftDutyTime(e.target.value)}
+                className="w-full p-3 bg-slate-800 text-white rounded-xl border border-white/10 focus:border-primary/30 focus:outline-none"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">Görev Başlangıç Saati</label>
               <input
@@ -289,6 +394,20 @@ export default function UGSCalculatorPage() {
               </div>
               
               <div className="space-y-3 text-sm">
+                {result.adjustedStartTime && (
+                  <div className="flex justify-between">
+                    <span>Hesaplanan başlangıç saati:</span>
+                    <span className="font-mono font-medium">{result.adjustedStartTime}</span>
+                  </div>
+                )}
+                
+                {result.adjustedEndTime && (
+                  <div className="flex justify-between">
+                    <span>Hesaplanan bitiş saati:</span>
+                    <span className="font-mono font-medium">{result.adjustedEndTime}</span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between">
                   <span>Görev zamanı:</span>
                   <span className="font-mono font-medium">{new UGSChecker().decimalToHHMM(result.actualDutyHours)}</span>
@@ -310,10 +429,17 @@ export default function UGSCalculatorPage() {
           )}
         </div>
         
-        {/* Usage guide with improved spacing */}
         <div className="mt-10 bg-secondary/20 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
           <h3 className="text-lg font-medium mb-3">Nasıl Kullanılır?</h3>
           <div className="space-y-2.5 text-sm text-foreground/70">
+            <p className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Yerel Saat Dilimi:</strong> Görev saatlerinin hangi saat diliminde olduğunu seçin (örn. UTC+3)</span>
+            </p>
+            <p className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Uçak Tipine Göre Görev Süresi:</strong> Uçak tipine göre ek görev süresi (örn. 01:00)</span>
+            </p>
             <p className="flex items-start">
               <span className="mr-2">•</span>
               <span><strong>Görev Başlangıç/Bitiş Saati:</strong> Saati SS:DD formatında girin (örn. 06:30)</span>
@@ -331,9 +457,10 @@ export default function UGSCalculatorPage() {
           <div className="mt-5 p-4 bg-background/40 rounded-lg text-xs">
             <p className="font-medium mb-2">Örnek Hesaplamalar:</p>
             <div className="space-y-2">
-              <p>• Kalkış: 06:30, İniş: 19:30, Sektör: 2</p>
-              <p>• Kalkış: 14:15, İniş: 01:45, Sektör: 4</p>
-              <p>• Kalkış: 22:00, İniş: 06:00, Sektör: 6</p>
+              <p>• UTC+3, Uçak Tipi: 01:00, Başlangıç: 04:00, Bitiş: 16:00, Sektör: 2</p>
+              <p>  → Hesaplanan: 06:00-16:00 (10 saat, limit dahilinde)</p>
+              <p>• UTC+2, Uçak Tipi: 01:15, Başlangıç: 14:15, Bitiş: 01:45, Sektör: 4</p>
+              <p>• UTC+0, Uçak Tipi: 00:30, Başlangıç: 22:00, Bitiş: 06:00, Sektör: 6</p>
             </div>
           </div>
         </div>
