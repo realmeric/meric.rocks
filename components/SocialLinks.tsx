@@ -5,7 +5,7 @@ export default function SocialLinks() {
   return (
     <div className="flex items-center gap-3">
       <a
-        href="https://github.com/jiprettycool"
+        href="https://github.com/realmeric"
         target="_blank"
         rel="noopener noreferrer"
         className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/80 hover:text-primary transition-all active:scale-95"
@@ -17,7 +17,7 @@ export default function SocialLinks() {
       </a>
       
       <a
-        href="https://twitter.com/jiprettycool"
+        href="https://twitter.com/iamrealji"
         target="_blank"
         rel="noopener noreferrer"
         className="p-2.5 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/80 hover:text-primary transition-all active:scale-95"
