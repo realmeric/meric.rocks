@@ -24,22 +24,6 @@ export default function DiscordStatus() {
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
   };
 
-  const getCodingWorkspaceName = () => {
-    if (!codingActivity) return "";
-    const workspaceFromState = codingActivity.state?.replace(/^Workspace:\s*/i, "").trim();
-    if (workspaceFromState) return workspaceFromState;
-
-    if (codingActivity.details) {
-      const segments = codingActivity.details.split(/[\\/]/).filter(Boolean);
-      if (segments.length > 1) {
-        return segments[segments.length - 2] || segments[segments.length - 1];
-      }
-      return segments[0] ?? codingActivity.details;
-    }
-
-    return codingActivity.name;
-  };
-
   if (loading) {
     return (
       <div className="mt-6 flex justify-center">
@@ -82,9 +66,7 @@ export default function DiscordStatus() {
               )}
             </div>
             <p className="text-base font-medium truncate max-w-[160px]">
-              {codingActivity
-                ? forLongText(getCodingWorkspaceName(), 22)
-                : forLongText(currentActivity?.name, 22)}
+              {forLongText(currentActivity?.name, 22)}
             </p>
           </div>
         </div>
