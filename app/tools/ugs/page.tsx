@@ -39,11 +39,9 @@ class UGSChecker {
     return date;
   }
   
-  getTimeRangeCategory(startTime: Date): string {
-    const hour = startTime.getHours();
-    const minute = startTime.getMinutes();
-    const timeVal = hour * 60 + minute;
-    
+  getTimeRangeCategory(startTime: Date, utcOffset: number = 0): string {
+    const timeVal = this.getLocalMinutes(startTime, utcOffset);
+
     if (360 <= timeVal && timeVal < 809) return "06:00-13:29";
     if (810 <= timeVal && timeVal < 839) return "13:30-13:59";
     if (840 <= timeVal && timeVal < 869) return "14:00-14:29";
@@ -61,8 +59,13 @@ class UGSChecker {
     return "17:00-04:59";
   }
   
-  getMaxDutyTime(startTime: Date, numSectors: number, skpkEnabled: boolean): number {
-    const timeCategory = this.getTimeRangeCategory(startTime);
+  getMaxDutyTime(
+    startTime: Date,
+    numSectors: number,
+    skpkEnabled: boolean,
+    utcOffset: number
+  ): number {
+    const timeCategory = this.getTimeRangeCategory(startTime, utcOffset);
     let maxDutyTime = 9.0;
     
     if (numSectors <= 2) {
@@ -92,9 +95,23 @@ class UGSChecker {
     }
     
     const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
+    date.setUTCHours(hours - utcOffset, minutes, 0, 0);
     
     return date;
+  }
+
+  private getLocalMinutes(date: Date, utcOffset: number): number {
+    const minutesInDay = 24 * 60;
+    const utcMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+    const localMinutes = utcMinutes + utcOffset * 60;
+    return ((localMinutes % minutesInDay) + minutesInDay) % minutesInDay;
+  }
+
+  private formatTimeWithOffset(date: Date, utcOffset: number): string {
+    const localMinutes = this.getLocalMinutes(date, utcOffset);
+    const hours = Math.floor(localMinutes / 60);
+    const minutes = localMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 
   addAircraftDutyTime(startTime: Date, aircraftDutyTime: string): Date {
@@ -105,7 +122,8 @@ class UGSChecker {
     const dutyMinutes = parseInt(dutyTimeMatch[2], 10);
     
     const adjustedStartTime = new Date(startTime);
-    adjustedStartTime.setHours(adjustedStartTime.getHours() - dutyHours, adjustedStartTime.getMinutes() - dutyMinutes);
+    const totalMinutes = dutyHours * 60 + dutyMinutes;
+    adjustedStartTime.setTime(adjustedStartTime.getTime() - totalMinutes * 60 * 1000);
     
     return adjustedStartTime;
   }
@@ -141,19 +159,19 @@ class UGSChecker {
     }
     
     const adjustedStartTime = this.addAircraftDutyTime(startTime, aircraftDutyTime);
-    let adjustedEndTime = new Date(endTime);
+    const adjustedEndTime = new Date(endTime);
     
     if (adjustedEndTime < adjustedStartTime) {
-      adjustedEndTime.setDate(adjustedEndTime.getDate() + 1);
+      adjustedEndTime.setUTCDate(adjustedEndTime.getUTCDate() + 1);
     }
     
     const actualDutyHours = (adjustedEndTime.getTime() - adjustedStartTime.getTime()) / (1000 * 60 * 60);
     
-    const timeCategory = this.getTimeRangeCategory(adjustedStartTime);
-    const maxDutyHours = this.getMaxDutyTime(adjustedStartTime, numSectors, skpkEnabled);
+    const timeCategory = this.getTimeRangeCategory(adjustedStartTime, utcOffset);
+    const maxDutyHours = this.getMaxDutyTime(adjustedStartTime, numSectors, skpkEnabled, utcOffset);
     
-    const adjustedStartTimeStr = `${adjustedStartTime.getHours().toString().padStart(2, '0')}:${adjustedStartTime.getMinutes().toString().padStart(2, '0')}`;
-    const adjustedEndTimeStr = `${adjustedEndTime.getHours().toString().padStart(2, '0')}:${adjustedEndTime.getMinutes().toString().padStart(2, '0')}`;
+    const adjustedStartTimeStr = this.formatTimeWithOffset(adjustedStartTime, utcOffset);
+    const adjustedEndTimeStr = this.formatTimeWithOffset(adjustedEndTime, utcOffset);
     
     if (actualDutyHours <= maxDutyHours) {
       return {

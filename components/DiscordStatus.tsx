@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import Image from 'next/image';
 import { useLanyard } from '../hooks/useLanyard';
 
 export default function DiscordStatus() {
@@ -75,10 +76,13 @@ export default function DiscordStatus() {
         <div className="flex items-center gap-3 py-3 pl-3 pr-5 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 shadow-sm hover:shadow-md transition-shadow">
           <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
             {data.spotify?.album_art_url ? (
-              <img 
+              <Image 
                 src={data.spotify.album_art_url} 
-                alt="Album" 
+                alt="Album cover" 
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
+                sizes="40px"
               />
             ) : (
               <div className="w-10 h-10 rounded-2xl bg-green-500/20 flex items-center justify-center">
