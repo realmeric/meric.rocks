@@ -8,7 +8,7 @@ import MobileNav from '../components/MobileNav'
 
 export const revalidate = 900;
 export default async function Home() {
-  const repos = await getPinnedRepos('jiprettycool');
+  const repos = await getPinnedRepos('realmeric');
 
   const getPlaceholderColor = (index: number) => {
     const colors = ['#3178c6', '#f1e05a', '#e34c26', '#563d7c', '#2b7489', '#89e051'];
@@ -58,7 +58,7 @@ export default async function Home() {
             <div className="relative z-10 animate-[float_6s_ease-in-out_infinite]">
               <div className="rounded-[2rem] overflow-hidden h-56 w-56 sm:h-72 sm:w-72 md:h-80 md:w-80 border-2 border-white/10 shadow-2xl">
                 <Image 
-                  src="https://github.com/jiprettycool.png" 
+                  src="https://github.com/realmeric.png" 
                   alt="Meriç" 
                   width={400} 
                   height={400}
@@ -83,7 +83,7 @@ export default async function Home() {
           <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
             {repos.map((repo, index) => {
               const emoji = getEmojiFromDescription(repo.description);
-              const isFeaturedRepo = repo.name === " ";
+              const isFeaturedRepo = repo.name === "mkm-editor";
               
               return (
                 <div 
