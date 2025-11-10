@@ -88,7 +88,7 @@ export default async function Home() {
               return (
                 <div 
                   key={repo.id} 
-                  className={`card backdrop-blur-md shadow-xl ${isFeaturedRepo ? 'rainbow-border p-4 sm:p-5' : 'border border-white/10 hover:border-white/20 p-5 sm:p-6'} group bg-background rounded-2xl flex flex-col h-full transition-all hover:transform hover:translate-y-[-2px] active:scale-98 touch-manipulation`}
+                  className={`card ${isFeaturedRepo ? 'rainbow-border p-4 sm:p-5' : 'p-5 sm:p-6'} group rounded-2xl flex flex-col h-full transition-all hover:transform hover:translate-y-[-2px] active:scale-98 touch-manipulation`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-center gap-3 sm:gap-4 mb-4">

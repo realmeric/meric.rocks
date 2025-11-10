@@ -1,5 +1,12 @@
 "use client";
-import { useState, useEffect } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  createContext,
+  useContext,
+  ReactNode,
+} from 'react';
 
 const DISCORD_ID = '455384255774720011';
 
@@ -53,7 +60,15 @@ type SpotifyData = {
   album: string;
 };
 
-export function useLanyard() {
+type UseLanyardValue = {
+  data: LanyardResponse['data'] | null;
+  loading: boolean;
+  error: Error | null;
+};
+
+const LanyardContext = createContext<UseLanyardValue | undefined>(undefined);
+
+function useProvideLanyard(): UseLanyardValue {
   const [data, setData] = useState<LanyardResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -78,5 +93,23 @@ export function useLanyard() {
     return () => clearInterval(intervalId);
   }, []);
 
-  return { data, loading, error };
+  return useMemo(() => ({ data, loading, error }), [data, loading, error]);
+}
+
+export function LanyardProvider({ children }: { children: ReactNode }) {
+  const value = useProvideLanyard();
+
+  return (
+    <LanyardContext.Provider value={value}>
+      {children}
+    </LanyardContext.Provider>
+  );
+}
+
+export function useLanyard() {
+  const context = useContext(LanyardContext);
+  if (!context) {
+    throw new Error('useLanyard must be used within a LanyardProvider');
+  }
+  return context;
 }

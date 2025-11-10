@@ -11,17 +11,28 @@
   --primary: #f5f5f5;
   --secondary: #171717;
   --accent: #525252;
+  /* Elevated surfaces for card contrast (RGB values for Tailwind alpha utilities) */
+  --surface: 32 33 36;    /* #202124 */
+  --surface-alt: 38 39 42; /* #26272a */
+  --yas-marina-accent: #5aabe3;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+  min-height: 100vh;
 }
 
 @layer components {
   .card {
-    @apply bg-secondary rounded-xl p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02];
+    @apply bg-surface rounded-xl p-6 shadow-xl border border-white/10 transition-all duration-300 hover:shadow-2xl hover:border-white/20 hover:bg-surfaceAlt/90 hover:scale-[1.02] backdrop-blur-sm;
+  }
+
+  /* Optional stronger elevated variant */
+  .card-elevated {
+    @apply bg-surface/95 rounded-2xl p-6 shadow-ios-lg border border-white/15 backdrop-blur-md transition-colors hover:border-white/25 hover:bg-surfaceAlt/95;
   }
   
   .btn {
@@ -165,5 +176,261 @@ section {
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+body.yas-marina-mode {
+  --background: #010d1c;
+  --foreground: #eef8ff;
+  --primary: var(--yas-marina-accent);
+  --secondary: #041c32;
+  --accent: #9fdcff;
+  --surface: 5 28 51;
+  --surface-alt: 9 40 70;
+  color: var(--foreground);
+  background: radial-gradient(circle at 15% 20%, rgba(90, 171, 227, 0.35), transparent 55%),
+    radial-gradient(circle at 85% 10%, rgba(6, 35, 66, 0.5), transparent 60%),
+    linear-gradient(120deg, #010d1c 0%, #031b31 45%, #041021 100%);
+  transition: background 0.6s ease, color 0.4s ease;
+}
+
+body.yas-marina-mode::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(90, 171, 227, 0.35), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(7, 62, 100, 0.45), transparent 60%),
+    linear-gradient(160deg, rgba(2, 19, 39, 0.85), rgba(1, 11, 24, 0.95));
+  opacity: 0.9;
+  z-index: -1;
+  animation: yasMarinaAurora 16s ease-in-out infinite alternate;
+}
+
+body.yas-marina-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 180px 180px;
+  opacity: 0.18;
+  mix-blend-mode: screen;
+  z-index: -1;
+  animation: yasMarinaGrid 20s linear infinite;
+}
+
+body.yas-marina-mode section {
+  background-color: rgba(3, 19, 37, 0.5);
+  border-radius: 32px;
+  border: 1px solid rgba(90, 171, 227, 0.2);
+  box-shadow: 0 30px 80px rgba(2, 10, 19, 0.65);
+  backdrop-filter: blur(12px);
+}
+
+body.yas-marina-mode .card {
+  background: linear-gradient(145deg, rgba(5, 26, 47, 0.95), rgba(5, 16, 32, 0.9));
+  border-color: rgba(90, 171, 227, 0.45);
+  box-shadow: 0 25px 50px rgba(1, 6, 12, 0.65);
+}
+
+body.yas-marina-mode .btn {
+  background: linear-gradient(120deg, var(--yas-marina-accent), #8ed3ff);
+  color: #02182d;
+  border: none;
+  box-shadow: 0 15px 35px rgba(90, 171, 227, 0.4);
+}
+
+body.yas-marina-mode .btn-outline {
+  border-color: rgba(90, 171, 227, 0.65);
+  color: var(--foreground);
+  background: rgba(90, 171, 227, 0.1);
+}
+
+body.yas-marina-mode .btn-outline:hover {
+  background: rgba(90, 171, 227, 0.3);
+}
+
+body.yas-marina-mode .rainbow-border::before {
+  background: linear-gradient(120deg, rgba(90, 171, 227, 0.95), rgba(8, 41, 80, 0.95), rgba(149, 222, 255, 1));
+  opacity: 1;
+}
+
+body.yas-marina-mode .btn,
+body.yas-marina-mode .btn-outline,
+body.yas-marina-mode .card,
+body.yas-marina-mode section {
+  transition: all 0.45s ease;
+}
+
+.yas-marina-banner {
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.4rem 0.75rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(2, 18, 35, 0.85);
+  border: 1px solid rgba(90, 171, 227, 0.5);
+  box-shadow: 0 20px 45px rgba(1, 6, 12, 0.65);
+  backdrop-filter: blur(14px);
+  color: #f3fbff;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.yas-marina-banner__glow {
+  content: '';
+  position: absolute;
+  inset: -60% -10%;
+  background: radial-gradient(circle, rgba(90, 171, 227, 0.45), transparent 55%);
+  filter: blur(30px);
+  opacity: 0.6;
+  z-index: -1;
+  animation: yasMarinaGlow 6s ease-in-out infinite;
+}
+
+.yas-marina-banner__art {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 10px 25px rgba(1, 7, 12, 0.6);
+  flex-shrink: 0;
+}
+
+.yas-marina-banner__art--placeholder {
+  background: linear-gradient(140deg, rgba(90, 171, 227, 0.5), rgba(7, 33, 65, 0.9));
+}
+
+.yas-marina-banner__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 11rem;
+}
+
+.yas-marina-banner__eyebrow {
+  margin: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.yas-marina-banner__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.yas-marina-banner__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.yas-marina-banner__wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 26px;
+  padding-left: 0.75rem;
+}
+
+.yas-marina-banner__wave span {
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c8ecff, var(--yas-marina-accent));
+  animation: yasMarinaWave 1.3s ease-in-out infinite;
+  opacity: 0.9;
+}
+
+.yas-marina-banner__wave span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.yas-marina-banner__wave span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.yas-marina-transition {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 65;
+}
+
+.yas-marina-transition__circle {
+  position: absolute;
+  width: 200vmax;
+  height: 200vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(165, 226, 255, 0.95), rgba(9, 34, 59, 0.98));
+  transform: translate(-50%, -50%) scale(0);
+  animation: yasMarinaCircle 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  box-shadow: 0 0 80px rgba(90, 171, 227, 0.45), 0 0 140px rgba(4, 16, 30, 0.65);
+}
+
+@keyframes yasMarinaAurora {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(2%, 1%, 0) scale(1.03);
+  }
+}
+
+@keyframes yasMarinaGrid {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 200px 200px, 200px 200px;
+  }
+}
+
+@keyframes yasMarinaGlow {
+  0% {
+    opacity: 0.4;
+    transform: translate3d(-10%, -10%, 0);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translate3d(10%, 10%, 0);
+  }
+}
+
+@keyframes yasMarinaWave {
+  0% {
+    height: 6px;
+  }
+  50% {
+    height: 24px;
+  }
+  100% {
+    height: 10px;
+  }
+}
+
+@keyframes yasMarinaCircle {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.95;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
   }
 }

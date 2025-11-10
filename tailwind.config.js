@@ -10,12 +10,15 @@ module.exports = {
           background: 'var(--background)',
           foreground: 'var(--foreground)',
           primary: {
-            DEFAULT: '#0A8',
-            dark: '#0A84',
+            DEFAULT: '#5aabe3',
+            dark: '#1F77B7',
           },
           secondary: {
             DEFAULT: '#1c1c1e',
           },
+          // New elevated surface colors for cards/panels using CSS RGB vars for alpha support
+          surface: 'rgb(var(--surface) / <alpha-value>)',
+          surfaceAlt: 'rgb(var(--surface-alt) / <alpha-value>)',
           accent: 'var(--accent)',
           success: '#30D158',
           warning: '#FFD60A',

@@ -1,10 +1,11 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useLanyard } from '../hooks/useLanyard';
 
 export default function DiscordStatus() {
   const { data, loading } = useLanyard();
+  const artRef = useRef<HTMLDivElement | null>(null);
   const codingActivity = data?.activities?.find(activity => 
     activity.name.includes("Code")
   );
@@ -23,6 +24,37 @@ export default function DiscordStatus() {
     if (!text) return "";
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
   };
+
+  const isYasMarinaSong = Boolean(
+    data?.listening_to_spotify &&
+    data.spotify?.song?.trim().toLowerCase() === "yas marina"
+  );
+
+  const prevYasMarinaRef = useRef(isYasMarinaSong);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const wasActive = prevYasMarinaRef.current;
+    if (isYasMarinaSong && !wasActive) {
+      const node = artRef.current;
+      let detail = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      };
+
+      if (node) {
+        const rect = node.getBoundingClientRect();
+        detail = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        };
+      }
+
+      window.dispatchEvent(new CustomEvent('yas-marina-origin', { detail }));
+    }
+
+    prevYasMarinaRef.current = isYasMarinaSong;
+  }, [isYasMarinaSong]);
 
   if (loading) {
     return (
@@ -73,8 +105,20 @@ export default function DiscordStatus() {
       )}
 
       {data?.spotify?.song ? (
-        <div className="flex items-center gap-3 py-3 pl-3 pr-5 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 shadow-sm hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+        <div
+          className={`group relative flex items-center gap-3 py-3 pl-3 pr-5 rounded-2xl border transition-all ${
+            isYasMarinaSong
+              ? 'bg-gradient-to-r from-[#031225]/90 via-[#062342]/80 to-[#0a2f58]/80 border-[#5aabe3]/40 text-[#d6f0ff] shadow-[0_20px_50px_rgba(1,6,14,0.65)]'
+              : 'bg-green-500/10 border-green-500/20 text-green-400 shadow-sm hover:shadow-md'
+          }`}
+        >
+          {isYasMarinaSong && (
+            <span
+              className="pointer-events-none absolute -inset-1 rounded-[1.75rem] bg-[#5aabe3]/20 blur-2xl opacity-70 group-hover:opacity-90 transition-opacity duration-500"
+              aria-hidden="true"
+            />
+          )}
+          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" ref={artRef}>
             {data.spotify?.album_art_url ? (
               <Image 
                 src={data.spotify.album_art_url} 
@@ -92,9 +136,11 @@ export default function DiscordStatus() {
               </div>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="relative min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium opacity-80">Spotify</span>
+              <span className="text-sm font-medium opacity-80">
+                {isYasMarinaSong ? "Yas Marina" : "Spotify"}
+              </span>
             </div>
             <p className="text-base font-medium truncate max-w-[160px]">
               {forLongText(data.spotify.song, 22)}
