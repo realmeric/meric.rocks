@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
 import { useLanyard } from '../hooks/useLanyard';
+import YachtRain from './YachtRain';
 
 const TARGET_SONG = 'yas marina';
 const ACCENT_COLOR = '#5aabe3';
@@ -118,35 +119,7 @@ export default function YasMarinaMode() {
           />
         </div>
       )}
-
-      {modeActive && (
-        <>
-          <div className="yas-marina-banner" role="status" aria-live="polite">
-            <div className="yas-marina-banner__glow" />
-            {yasMarinaState.art ? (
-              <span
-                className="yas-marina-banner__art"
-                style={{ backgroundImage: `url(${yasMarinaState.art})` }}
-              />
-            ) : (
-              <span className="yas-marina-banner__art yas-marina-banner__art--placeholder" />
-            )}
-            <div className="yas-marina-banner__content">
-              <p className="yas-marina-banner__eyebrow">Yas Marina takeover</p>
-              <p className="yas-marina-banner__title">{yasMarinaState.song}</p>
-              <p className="yas-marina-banner__meta">
-                {yasMarinaState.artist || 'Spotify'}
-                {yasMarinaState.album ? ` • ${yasMarinaState.album}` : ''}
-              </p>
-            </div>
-            <div className="yas-marina-banner__wave">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        </>
-      )}
+      {modeActive && (<><YachtRain /></>)}
     </>
   );
 }
